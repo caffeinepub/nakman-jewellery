@@ -1,0 +1,269 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Fonts ─── */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/assets/fonts/Fraunces-Variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url("/assets/fonts/PlayfairDisplay-Variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url("/assets/fonts/PlusJakartaSans-Variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/assets/fonts/Outfit-Variable.woff2") format("woff2");
+}
+
+/* ─── Design Tokens (B2B Navy + Gold) ─── */
+@layer base {
+  :root {
+    --radius: 0.5rem;
+
+    /* Background: deep navy */
+    --background: 0.14 0.030 250;
+    --foreground: 0.96 0.008 250;
+
+    /* Card: slightly lighter navy */
+    --card: 0.19 0.038 250;
+    --card-foreground: 0.96 0.008 250;
+
+    /* Popover */
+    --popover: 0.21 0.040 250;
+    --popover-foreground: 0.96 0.008 250;
+
+    /* Primary: rich amber-gold */
+    --primary: 0.76 0.18 68;
+    --primary-foreground: 0.14 0.030 250;
+
+    /* Secondary: mid-tone navy */
+    --secondary: 0.24 0.042 250;
+    --secondary-foreground: 0.96 0.008 250;
+
+    /* Muted: dark navy-charcoal */
+    --muted: 0.22 0.028 250;
+    --muted-foreground: 0.60 0.040 250;
+
+    /* Accent: navy blue highlight */
+    --accent: 0.27 0.045 250;
+    --accent-foreground: 0.76 0.18 68;
+
+    /* Destructive */
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    /* Gold accent tokens */
+    --gold: 0.76 0.18 68;
+    --gold-light: 0.88 0.14 68;
+    --gold-dark: 0.58 0.20 68;
+
+    /* Border & Input */
+    --border: 0.28 0.042 250;
+    --input: 0.24 0.035 250;
+    --ring: 0.76 0.18 68;
+
+    /* Charts */
+    --chart-1: 0.76 0.18 68;
+    --chart-2: 0.60 0.16 250;
+    --chart-3: 0.50 0.14 200;
+    --chart-4: 0.82 0.12 68;
+    --chart-5: 0.45 0.18 68;
+
+    /* Sidebar */
+    --sidebar: 0.16 0.034 250;
+    --sidebar-foreground: 0.96 0.008 250;
+    --sidebar-primary: 0.76 0.18 68;
+    --sidebar-primary-foreground: 0.14 0.030 250;
+    --sidebar-accent: 0.24 0.042 250;
+    --sidebar-accent-foreground: 0.76 0.18 68;
+    --sidebar-border: 0.28 0.042 250;
+    --sidebar-ring: 0.76 0.18 68;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Outfit", sans-serif;
+  }
+}
+
+/* ─── Custom Utilities ─── */
+@layer utilities {
+  .font-display {
+    font-family: "Fraunces", serif;
+  }
+
+  .font-heading {
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+
+  .text-gold {
+    color: oklch(var(--gold));
+  }
+
+  .bg-gold {
+    background-color: oklch(var(--gold));
+  }
+
+  .bg-gold\/10 {
+    background-color: oklch(var(--gold) / 0.10);
+  }
+
+  .bg-gold\/20 {
+    background-color: oklch(var(--gold) / 0.20);
+  }
+
+  .border-gold {
+    border-color: oklch(var(--gold));
+  }
+
+  .border-gold\/20 {
+    border-color: oklch(var(--gold) / 0.20);
+  }
+
+  .border-gold\/30 {
+    border-color: oklch(var(--gold) / 0.30);
+  }
+
+  .border-gold\/40 {
+    border-color: oklch(var(--gold) / 0.40);
+  }
+
+  .border-gold\/50 {
+    border-color: oklch(var(--gold) / 0.50);
+  }
+
+  .shadow-gold {
+    box-shadow: 0 0 24px oklch(var(--gold) / 0.30);
+  }
+
+  .shadow-gold-sm {
+    box-shadow: 0 0 12px oklch(var(--gold) / 0.20);
+  }
+
+  .ring-gold {
+    ring-color: oklch(var(--gold));
+  }
+
+  /* Gold gradient for buttons and CTAs */
+  .gold-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.86 0.14 75) 0%,
+      oklch(0.76 0.18 68) 45%,
+      oklch(0.60 0.20 55) 100%
+    );
+  }
+
+  .navy-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.10 0.028 250) 0%,
+      oklch(0.17 0.038 250) 50%,
+      oklch(0.12 0.030 250) 100%
+    );
+  }
+
+  /* Gold text gradient for brand name / headings */
+  .gold-text-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.92 0.12 80) 0%,
+      oklch(0.76 0.18 68) 45%,
+      oklch(0.60 0.20 55) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Brand name gradient — warm gold shimmer for NakMan Jewellery */
+  .brand-text-gradient {
+    background: linear-gradient(
+      135deg,
+      oklch(0.96 0.10 85) 0%,
+      oklch(0.82 0.18 70) 35%,
+      oklch(0.72 0.20 60) 65%,
+      oklch(0.86 0.14 75) 100%
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-bg {
+    background: radial-gradient(
+      ellipse at 30% 50%,
+      oklch(0.28 0.12 250 / 0.50) 0%,
+      oklch(0.14 0.030 250) 60%
+    );
+  }
+
+  .noise-texture {
+    position: relative;
+  }
+
+  .noise-texture::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    opacity: 0.03;
+  }
+
+  .mandala-bg {
+    background-image: 
+      radial-gradient(circle at 20% 80%, oklch(0.76 0.18 68 / 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 80% 20%, oklch(0.76 0.18 68 / 0.05) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, oklch(0.76 0.18 68 / 0.03) 0%, transparent 60%);
+  }
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: oklch(0.16 0.034 250);
+}
+
+::-webkit-scrollbar-thumb {
+  background: oklch(0.76 0.18 68 / 0.40);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.76 0.18 68 / 0.70);
+}
+
+/* ─── Focus visible ─── */
+:focus-visible {
+  outline: 2px solid oklch(var(--ring));
+  outline-offset: 2px;
+}
