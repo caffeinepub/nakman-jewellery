@@ -90,10 +90,77 @@ function LoginRegisterView({
           disabled={isLoggingIn}
           className="w-full gold-gradient text-background font-bold hover:opacity-90 shadow-gold"
         >
-          {isLoggingIn ? "Logging in..." : "Login / Register"}
+          {isLoggingIn ? "Connecting..." : "Login / Register"}
         </Button>
 
         <div className="mt-6 space-y-3 text-left">
+          {/* Step-by-step login instructions */}
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+            <h3 className="font-heading font-semibold text-blue-400 mb-3 text-sm flex items-center gap-2">
+              <span>ℹ️</span> How to Login (First Time)
+            </h3>
+            <ol className="space-y-2 list-none">
+              <li className="flex gap-2 items-start">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs mt-0.5">
+                  1
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Click{" "}
+                  <strong className="text-foreground">
+                    "Login / Register"
+                  </strong>{" "}
+                  above
+                </span>
+              </li>
+              <li className="flex gap-2 items-start">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs mt-0.5">
+                  2
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  A secure login window will open
+                </span>
+              </li>
+              <li className="flex gap-2 items-start">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs mt-0.5">
+                  3
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  First time? Click{" "}
+                  <strong className="text-foreground">
+                    "Create new Internet Identity"
+                  </strong>
+                </span>
+              </li>
+              <li className="flex gap-2 items-start">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs mt-0.5">
+                  4
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Set up using{" "}
+                  <strong className="text-foreground">
+                    fingerprint, face ID, or device PIN
+                  </strong>{" "}
+                  — no password needed
+                </span>
+              </li>
+              <li className="flex gap-2 items-start">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs mt-0.5">
+                  5
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  You get a unique{" "}
+                  <strong className="text-foreground">Identity Number</strong> —
+                  save it to log in on other devices
+                </span>
+              </li>
+            </ol>
+            <p className="text-xs text-muted-foreground/60 mt-3 border-t border-blue-500/10 pt-2">
+              Already registered? Click{" "}
+              <strong className="text-foreground">"Use existing"</strong> and
+              enter your Identity Number.
+            </p>
+          </div>
+
           <div className="bg-gold/5 border border-gold/20 rounded-xl p-4 text-sm">
             <h3 className="font-heading font-semibold text-gold mb-2">
               Benefits of logging in:
