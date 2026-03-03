@@ -11,7 +11,15 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Check, Edit2, LogOut, Package, User, X } from "lucide-react";
+import {
+  Check,
+  Edit2,
+  LogOut,
+  Package,
+  ShieldCheck,
+  User,
+  X,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -24,6 +32,7 @@ import {
   useUserProfile,
 } from "../hooks/useQueries";
 import { calculateDiscount, formatINR } from "../utils/discount";
+import { getSecretParameter } from "../utils/urlParams";
 
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   [OrderStatus.pending]: "Pending",
@@ -48,9 +57,16 @@ const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
 export function Account() {
   const { identity, login, clear, isLoggingIn } = useInternetIdentity();
   const isLoggedIn = !!identity;
+  const isAdminSession = getSecretParameter("caffeineAdminToken") !== null;
 
   if (!isLoggedIn) {
-    return <LoginRegisterView onLogin={login} isLoggingIn={isLoggingIn} />;
+    return (
+      <LoginRegisterView
+        onLogin={login}
+        isLoggingIn={isLoggingIn}
+        isAdminSession={isAdminSession}
+      />
+    );
   }
 
   return <AccountView onLogout={clear} />;
@@ -59,9 +75,11 @@ export function Account() {
 function LoginRegisterView({
   onLogin,
   isLoggingIn,
+  isAdminSession,
 }: {
   onLogin: () => void;
   isLoggingIn: boolean;
+  isAdminSession: boolean;
 }) {
   return (
     <div className="container mx-auto px-4 py-8 max-w-md">
@@ -78,10 +96,33 @@ function LoginRegisterView({
         <h1 className="font-display text-2xl font-bold mb-2">
           Welcome to <span className="gold-text-gradient">NakMan</span>
         </h1>
-        <p className="text-muted-foreground text-sm mb-6">
-          Login to access your wholesale account, track orders, and get 5% extra
-          discount on all products.
-        </p>
+
+        {/* Admin session banner */}
+        {isAdminSession ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
+            className="mb-5 flex items-start gap-3 bg-gold/10 border border-gold/40 rounded-xl p-4 text-left"
+          >
+            <ShieldCheck className="h-5 w-5 text-gold flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-heading font-semibold text-gold text-sm mb-0.5">
+                Administrator Access Detected
+              </p>
+              <p className="text-xs text-muted-foreground">
+                You are accessing this site from the Caffeine dashboard. Click{" "}
+                <strong className="text-foreground">Login</strong> below to set
+                up your admin account.
+              </p>
+            </div>
+          </motion.div>
+        ) : (
+          <p className="text-muted-foreground text-sm mb-6">
+            Login to access your wholesale account, track orders, and get 5%
+            extra discount on all products.
+          </p>
+        )}
 
         <Button
           size="lg"
@@ -97,7 +138,8 @@ function LoginRegisterView({
           {/* Step-by-step login instructions */}
           <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
             <h3 className="font-heading font-semibold text-blue-400 mb-3 text-sm flex items-center gap-2">
-              <span>ℹ️</span> How to Login (First Time)
+              <span>ℹ️</span>{" "}
+              {isAdminSession ? "How to Set Up Admin Login" : "How to Login"}
             </h3>
             <ol className="space-y-2 list-none">
               <li className="flex gap-2 items-start">
@@ -117,7 +159,8 @@ function LoginRegisterView({
                   2
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  A secure login window will open
+                  A secure window will open — follow the steps to verify your
+                  identity
                 </span>
               </li>
               <li className="flex gap-2 items-start">
@@ -125,10 +168,11 @@ function LoginRegisterView({
                   3
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  First time? Click{" "}
+                  First time?{" "}
                   <strong className="text-foreground">
-                    "Create new Internet Identity"
-                  </strong>
+                    Create a new account
+                  </strong>{" "}
+                  using fingerprint, face ID, or device PIN — no password needed
                 </span>
               </li>
               <li className="flex gap-2 items-start">
@@ -136,11 +180,9 @@ function LoginRegisterView({
                   4
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  Set up using{" "}
-                  <strong className="text-foreground">
-                    fingerprint, face ID, or device PIN
-                  </strong>{" "}
-                  — no password needed
+                  You will receive a unique{" "}
+                  <strong className="text-foreground">Identity Number</strong> —
+                  save it to log in from other devices
                 </span>
               </li>
               <li className="flex gap-2 items-start">
@@ -148,17 +190,12 @@ function LoginRegisterView({
                   5
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  You get a unique{" "}
-                  <strong className="text-foreground">Identity Number</strong> —
-                  save it to log in on other devices
+                  Already registered? Select{" "}
+                  <strong className="text-foreground">"Use existing"</strong>{" "}
+                  and enter your Identity Number
                 </span>
               </li>
             </ol>
-            <p className="text-xs text-muted-foreground/60 mt-3 border-t border-blue-500/10 pt-2">
-              Already registered? Click{" "}
-              <strong className="text-foreground">"Use existing"</strong> and
-              enter your Identity Number.
-            </p>
           </div>
 
           <div className="bg-gold/5 border border-gold/20 rounded-xl p-4 text-sm">
@@ -172,6 +209,36 @@ function LoginRegisterView({
               <li>✓ Personalized product recommendations</li>
             </ul>
           </div>
+
+          {/* Admin access help section — shown only when NOT an admin session */}
+          {!isAdminSession && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="bg-card border border-gold/10 rounded-xl p-4"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldCheck className="h-4 w-4 text-gold/60" />
+                <h3 className="font-heading font-semibold text-muted-foreground text-sm">
+                  Are you the Store Owner?
+                </h3>
+              </div>
+              <p className="text-xs text-muted-foreground/80 mb-1">
+                To access the{" "}
+                <strong className="text-foreground">Admin Dashboard</strong>,
+                always open this website from your{" "}
+                <strong className="text-foreground">
+                  Caffeine platform dashboard
+                </strong>
+                .
+              </p>
+              <p className="text-xs text-muted-foreground/60">
+                Regular visitors who open the site directly will be registered
+                as wholesale customers, not admin.
+              </p>
+            </motion.div>
+          )}
         </div>
       </motion.div>
     </div>
