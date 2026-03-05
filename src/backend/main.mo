@@ -8,7 +8,6 @@ import List "mo:core/List";
 import Nat32 "mo:core/Nat32";
 import Runtime "mo:core/Runtime";
 import Principal "mo:core/Principal";
-
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import AccessControl "authorization/access-control";
