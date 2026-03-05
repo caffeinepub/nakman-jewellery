@@ -1,29 +1,27 @@
 import Text "mo:core/Text";
-import Array "mo:core/Array";
 import Map "mo:core/Map";
-import Iter "mo:core/Iter";
-import Time "mo:core/Time";
-import Order "mo:core/Order";
 import List "mo:core/List";
-import Nat32 "mo:core/Nat32";
+import Iter "mo:core/Iter";
+import Order "mo:core/Order";
+import Array "mo:core/Array";
+import Time "mo:core/Time";
 import Runtime "mo:core/Runtime";
+import Nat32 "mo:core/Nat32";
 import Principal "mo:core/Principal";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
-  let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
-  include MixinStorage();
-
-  public type CustomerType = {
+  type CustomerType = {
     #onlineSeller;
     #retailer;
   };
 
-  public type Category = {
+  type Category = {
     #earrings;
     #jewellerySet;
     #anklet;
@@ -34,7 +32,7 @@ actor {
     #chain;
   };
 
-  public type Product = {
+  type Product = {
     id : Text;
     name : Text;
     description : Text;
@@ -51,7 +49,7 @@ actor {
     createdAt : Int;
   };
 
-  public type OrderStatus = {
+  type OrderStatus = {
     #pending;
     #paymentVerified;
     #processing;
@@ -60,7 +58,7 @@ actor {
     #cancelled;
   };
 
-  public type CustomerProfile = {
+  type CustomerProfile = {
     name : Text;
     email : Text;
     phone : Text;
@@ -72,7 +70,7 @@ actor {
     quantity : Nat;
   };
 
-  public type Order = {
+  type Order = {
     id : Text;
     userId : Text;
     items : [CartItem];
@@ -83,7 +81,7 @@ actor {
     createdAt : Int;
   };
 
-  public type BlogPost = {
+  type BlogPost = {
     id : Text;
     title : Text;
     content : Text;
@@ -104,6 +102,11 @@ actor {
     };
   };
 
+  let accessControlState = AccessControl.initState();
+  include MixinAuthorization(accessControlState);
+
+  include MixinStorage();
+
   let userProfiles = Map.empty<Principal, CustomerProfile>();
   let products = Map.empty<Text, Product>();
   let carts = Map.empty<Principal, List.List<CartItem>>();
@@ -119,7 +122,7 @@ actor {
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?CustomerProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
+    if (caller != user and not (AccessControl.isAdmin(accessControlState, caller))) {
       Runtime.trap("Unauthorized: Can only view your own profile");
     };
     userProfiles.get(user);
@@ -145,9 +148,48 @@ actor {
           name = profile.name;
           email = profile.email;
           phone = profile.phone;
-          customerType = customerType;
+          customerType;
         };
         userProfiles.add(caller, updatedProfile);
+      };
+    };
+  };
+
+  public shared ({ caller }) func deleteUserProfile() : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can delete their profile");
+    };
+    userProfiles.remove(caller);
+  };
+
+  public shared ({ caller }) func adminUpdateUserInfo(
+    user : Principal,
+    updatedInfo : { name : ?Text; email : ?Text; phone : ?Text },
+  ) : async () {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      Runtime.trap("Unauthorized: Only admins can update user info");
+    };
+    switch (userProfiles.get(user)) {
+      case (null) {
+        Runtime.trap("User not found");
+      };
+      case (?profile) {
+        let updatedProfile : CustomerProfile = {
+          name = switch (updatedInfo.name) {
+            case (null) { profile.name };
+            case (?name) { name };
+          };
+          email = switch (updatedInfo.email) {
+            case (null) { profile.email };
+            case (?email) { email };
+          };
+          phone = switch (updatedInfo.phone) {
+            case (null) { profile.phone };
+            case (?phone) { phone };
+          };
+          customerType = profile.customerType;
+        };
+        userProfiles.add(user, updatedProfile);
       };
     };
   };
@@ -233,15 +275,15 @@ actor {
     products.remove(id);
   };
 
-  public query ({ caller }) func getAllProducts() : async [Product] {
+  public query func getAllProducts() : async [Product] {
     products.values().toArray().sort();
   };
 
-  public query ({ caller }) func getProductById(id : Text) : async ?Product {
+  public query func getProductById(id : Text) : async ?Product {
     products.get(id);
   };
 
-  public query ({ caller }) func getProductsByCategory(category : Category) : async [Product] {
+  public query func getProductsByCategory(category : Category) : async [Product] {
     products.values().toArray().filter(
       func(item : Product) : Bool {
         switch (category, item.category) {
@@ -259,7 +301,7 @@ actor {
     );
   };
 
-  public query ({ caller }) func getProductsByCustomerType(customerType : {
+  public query func getProductsByCustomerType(customerType : {
     #online;
     #retailer;
     #both;
@@ -306,7 +348,7 @@ actor {
         Runtime.trap("Cart is empty");
       };
       case (?cart) {
-        let updatedCart = cart.filter(func(item) { item.productId != productId });
+        let updatedCart = cart.filter(func(item : CartItem) : Bool { item.productId != productId });
         carts.add(caller, updatedCart);
       };
     };
@@ -367,25 +409,28 @@ actor {
       case (?cart) { cart.toArray() };
     };
 
-    if (cartItems.size() == 0) {
-      Runtime.trap("Cart is empty");
-    };
+    switch (cartItems.size()) {
+      case (0) {
+        Runtime.trap("Cart is empty");
+      };
+      case (_) {
+        let orderId = userId.concat(Int.toText(Time.now()));
+        let order : Order = {
+          id = orderId;
+          userId;
+          items = cartItems;
+          shippingAddress;
+          totalAmount = 0;
+          paymentScreenshot;
+          status = #pending;
+          createdAt = Time.now();
+        };
+        orders.add(orderId, order);
+        carts.remove(caller);
 
-    let orderId = userId.concat(Int.toText(Time.now()));
-    let order : Order = {
-      id = orderId;
-      userId;
-      items = cartItems;
-      shippingAddress;
-      totalAmount = 0;
-      paymentScreenshot;
-      status = #pending;
-      createdAt = Time.now();
+        orderId;
+      };
     };
-    orders.add(orderId, order);
-    carts.remove(caller);
-
-    orderId;
   };
 
   public query ({ caller }) func getMyOrders() : async [Order] {
@@ -449,11 +494,11 @@ actor {
     blogPosts.add(id, post);
   };
 
-  public query ({ caller }) func getAllBlogPosts() : async [BlogPost] {
+  public query func getAllBlogPosts() : async [BlogPost] {
     blogPosts.values().toArray().sort(BlogPost.compareByCreatedAt);
   };
 
-  public query ({ caller }) func getBlogPostById(id : Text) : async ?BlogPost {
+  public query func getBlogPostById(id : Text) : async ?BlogPost {
     blogPosts.get(id);
   };
 

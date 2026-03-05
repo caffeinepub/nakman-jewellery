@@ -88,12 +88,18 @@ export enum Variant_both_retailer_online {
 }
 export interface backendInterface {
     addToCart(productId: string, quantity: bigint): Promise<void>;
+    adminUpdateUserInfo(user: Principal, updatedInfo: {
+        name?: string;
+        email?: string;
+        phone?: string;
+    }): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     clearCart(): Promise<void>;
     createBlogPost(id: string, title: string, content: string, author: string, coverImage: ExternalBlob): Promise<void>;
     createProduct(id: string, name: string, description: string, category: Category, subcategory: string, price: bigint, images: Array<ExternalBlob>, customerType: Variant_both_retailer_online, inStock: bigint): Promise<void>;
     deleteBlogPost(id: string): Promise<void>;
     deleteProduct(id: string): Promise<void>;
+    deleteUserProfile(): Promise<void>;
     getAllBlogPosts(): Promise<Array<BlogPost>>;
     getAllOrders(): Promise<Array<Order>>;
     getAllProducts(): Promise<Array<Product>>;

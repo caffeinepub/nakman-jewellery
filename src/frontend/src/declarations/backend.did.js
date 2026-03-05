@@ -121,6 +121,18 @@ export const idlService = IDL.Service({
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addToCart' : IDL.Func([IDL.Text, IDL.Nat], [], []),
+  'adminUpdateUserInfo' : IDL.Func(
+      [
+        IDL.Principal,
+        IDL.Record({
+          'name' : IDL.Opt(IDL.Text),
+          'email' : IDL.Opt(IDL.Text),
+          'phone' : IDL.Opt(IDL.Text),
+        }),
+      ],
+      [],
+      [],
+    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'clearCart' : IDL.Func([], [], []),
   'createBlogPost' : IDL.Func(
@@ -149,6 +161,7 @@ export const idlService = IDL.Service({
     ),
   'deleteBlogPost' : IDL.Func([IDL.Text], [], []),
   'deleteProduct' : IDL.Func([IDL.Text], [], []),
+  'deleteUserProfile' : IDL.Func([], [], []),
   'getAllBlogPosts' : IDL.Func([], [IDL.Vec(BlogPost)], ['query']),
   'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
   'getAllProducts' : IDL.Func([], [IDL.Vec(Product)], ['query']),
@@ -316,6 +329,18 @@ export const idlFactory = ({ IDL }) => {
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addToCart' : IDL.Func([IDL.Text, IDL.Nat], [], []),
+    'adminUpdateUserInfo' : IDL.Func(
+        [
+          IDL.Principal,
+          IDL.Record({
+            'name' : IDL.Opt(IDL.Text),
+            'email' : IDL.Opt(IDL.Text),
+            'phone' : IDL.Opt(IDL.Text),
+          }),
+        ],
+        [],
+        [],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'clearCart' : IDL.Func([], [], []),
     'createBlogPost' : IDL.Func(
@@ -344,6 +369,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'deleteBlogPost' : IDL.Func([IDL.Text], [], []),
     'deleteProduct' : IDL.Func([IDL.Text], [], []),
+    'deleteUserProfile' : IDL.Func([], [], []),
     'getAllBlogPosts' : IDL.Func([], [IDL.Vec(BlogPost)], ['query']),
     'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
     'getAllProducts' : IDL.Func([], [IDL.Vec(Product)], ['query']),

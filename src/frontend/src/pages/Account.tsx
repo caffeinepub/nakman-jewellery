@@ -216,26 +216,40 @@ function LoginRegisterView({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="bg-card border border-gold/10 rounded-xl p-4"
+              className="bg-amber-500/8 border border-amber-500/25 rounded-xl p-4"
             >
               <div className="flex items-center gap-2 mb-2">
-                <ShieldCheck className="h-4 w-4 text-gold/60" />
-                <h3 className="font-heading font-semibold text-muted-foreground text-sm">
+                <ShieldCheck className="h-4 w-4 text-amber-400" />
+                <h3 className="font-heading font-semibold text-amber-300 text-sm">
                   Are you the Store Owner?
                 </h3>
               </div>
-              <p className="text-xs text-muted-foreground/80 mb-1">
+              <p className="text-xs text-amber-200/80 mb-2 leading-relaxed">
                 To access the{" "}
-                <strong className="text-foreground">Admin Dashboard</strong>,
-                always open this website from your{" "}
-                <strong className="text-foreground">
+                <strong className="text-amber-100">Admin Dashboard</strong>, you{" "}
+                <em>must</em> open this website from your{" "}
+                <strong className="text-amber-100">
                   Caffeine platform dashboard
-                </strong>
-                .
+                </strong>{" "}
+                before logging in.
               </p>
-              <p className="text-xs text-muted-foreground/60">
-                Regular visitors who open the site directly will be registered
-                as wholesale customers, not admin.
+              <div className="space-y-1.5 mb-2">
+                {[
+                  "Go to caffeine.ai and open your project",
+                  'Click the "Open App" or preview button there',
+                  "Login on the page that opens — you will get admin access",
+                ].map((step, i) => (
+                  <div key={step} className="flex items-start gap-2">
+                    <span className="flex-shrink-0 w-4 h-4 rounded-full bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold text-[10px] mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span className="text-xs text-amber-200/70">{step}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-amber-200/50">
+                Logging in from a direct URL registers you as a wholesale
+                customer, not admin.
               </p>
             </motion.div>
           )}

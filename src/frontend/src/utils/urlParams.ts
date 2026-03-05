@@ -33,17 +33,14 @@ export function getUrlParameter(paramName: string): string | null {
 }
 
 /**
- * Stores a parameter in both localStorage and sessionStorage for maximum persistence.
- * localStorage survives browser restarts; sessionStorage is a fallback.
- * Admin tokens are stored in localStorage so they survive tab closes.
+ * Stores a parameter in sessionStorage for persistence across navigation
+ * Useful for maintaining state like admin tokens throughout the session
  *
  * @param key - The key to store the value under
  * @param value - The value to store
  */
 export function storeSessionParameter(key: string, value: string): void {
   try {
-    // Use localStorage for admin tokens so they persist across sessions
-    localStorage.setItem(key, value);
     sessionStorage.setItem(key, value);
   } catch (error) {
     console.warn(`Failed to store session parameter ${key}:`, error);
@@ -51,16 +48,13 @@ export function storeSessionParameter(key: string, value: string): void {
 }
 
 /**
- * Retrieves a parameter from localStorage (falls back to sessionStorage)
+ * Retrieves a parameter from sessionStorage
  *
  * @param key - The key to retrieve
  * @returns The stored value if found, null otherwise
  */
 export function getSessionParameter(key: string): string | null {
   try {
-    // Check localStorage first (persists across sessions)
-    const localValue = localStorage.getItem(key);
-    if (localValue !== null) return localValue;
     return sessionStorage.getItem(key);
   } catch (error) {
     console.warn(`Failed to retrieve session parameter ${key}:`, error);

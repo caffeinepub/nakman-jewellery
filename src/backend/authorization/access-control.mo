@@ -21,16 +21,19 @@ module {
     };
   };
 
-  // First principal that calls this function becomes admin, all other principals become users.
+  // If userProvidedToken matches adminToken, ALWAYS assign #admin to the caller,
+  // even if they already have an existing role. This allows the store owner to
+  // reclaim admin access from the Caffeine dashboard at any time.
+  // If token doesn't match, only register new users as #user (don't change existing roles).
   public func initialize(state : AccessControlState, caller : Principal, adminToken : Text, userProvidedToken : Text) {
     if (caller.isAnonymous()) { return };
-    switch (state.userRoles.get(caller)) {
-      case (?_) {};
-      case (null) {
-        if (not state.adminAssigned and userProvidedToken == adminToken) {
-          state.userRoles.add(caller, #admin);
-          state.adminAssigned := true;
-        } else {
+    if (userProvidedToken == adminToken) {
+      state.userRoles.add(caller, #admin);
+      state.adminAssigned := true;
+    } else {
+      switch (state.userRoles.get(caller)) {
+        case (?_) {};
+        case (null) {
           state.userRoles.add(caller, #user);
         };
       };

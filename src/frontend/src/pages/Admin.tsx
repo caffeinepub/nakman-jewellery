@@ -19,8 +19,13 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2,
+  ExternalLink,
   FileText,
   Info,
   Loader2,
@@ -28,13 +33,13 @@ import {
   Package,
   Pencil,
   Plus,
-  RefreshCw,
   Shield,
+  ShieldCheck,
   ShoppingCart,
   Trash2,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ExternalBlob, type Product } from "../backend";
 import {
@@ -61,6 +66,7 @@ import {
   toYouTubeEmbedUrl,
 } from "../hooks/useYouTubeLinks";
 import { formatPrice } from "../utils/discount";
+import { getSecretParameter } from "../utils/urlParams";
 
 const CATEGORY_LABELS: Record<Category, string> = {
   [Category.earrings]: "Earrings",
@@ -91,203 +97,531 @@ const CUSTOMER_TYPE_LABELS: Record<Variant_both_retailer_online, string> = {
 export function Admin() {
   const { identity, login, isLoggingIn, clear } = useInternetIdentity();
   const { data: isAdmin, isLoading: isAdminLoading } = useIsAdmin();
+  const hasAdminToken = getSecretParameter("caffeineAdminToken") !== null;
+  const queryClient = useQueryClient();
+  const [isSettingUpAdmin, setIsSettingUpAdmin] = useState(false);
+
+  // When admin token is present but admin check not yet confirmed,
+  // show a brief "Setting up admin access..." screen while
+  // _initializeAccessControlWithSecret completes, then force a re-check.
+  useEffect(() => {
+    if (!identity || isAdminLoading || isAdmin || !hasAdminToken) return;
+
+    setIsSettingUpAdmin(true);
+    const timer = setTimeout(async () => {
+      await queryClient.invalidateQueries({ queryKey: ["actor"] });
+      await queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+      setIsSettingUpAdmin(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [identity, isAdminLoading, isAdmin, hasAdminToken, queryClient]);
 
   if (!identity) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <Shield className="h-16 w-16 text-gold/30 mx-auto mb-4" />
-        <h2 className="font-display text-2xl font-bold mb-2">Admin Access</h2>
-        <p className="text-muted-foreground mb-6">
-          Login to access the admin dashboard
-        </p>
-        <Button
-          onClick={login}
-          disabled={isLoggingIn}
-          className="gold-gradient text-background font-bold"
-          data-ocid="admin.primary_button"
-        >
-          {isLoggingIn ? "Logging in..." : "Login"}
-        </Button>
-      </div>
+      <AdminLoginGate
+        onLogin={login}
+        isLoggingIn={isLoggingIn}
+        hasAdminToken={hasAdminToken}
+      />
     );
   }
 
-  if (isAdminLoading) {
+  if (isAdminLoading || isSettingUpAdmin) {
     return (
       <div
-        className="container mx-auto px-4 py-16 text-center"
+        className="container mx-auto px-4 py-16 text-center space-y-4"
         data-ocid="admin.loading_state"
       >
-        <Loader2 className="h-8 w-8 text-gold animate-spin mx-auto" />
+        <Loader2 className="h-10 w-10 text-gold animate-spin mx-auto" />
+        {isSettingUpAdmin && hasAdminToken && (
+          <div className="space-y-1">
+            <p className="text-foreground font-heading font-semibold text-lg">
+              Setting up admin access...
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Admin token detected. Granting privileges, please wait.
+            </p>
+          </div>
+        )}
       </div>
     );
   }
 
   if (!isAdmin) {
-    return <AdminAccessHelp onLogout={clear} />;
+    return <AdminAccessHelp onLogout={clear} hasAdminToken={hasAdminToken} />;
   }
 
   return <AdminDashboard />;
 }
 
-function AdminAccessHelp({ onLogout }: { onLogout: () => void }) {
-  const [tokenStatus, setTokenStatus] = useState<
-    "idle" | "found" | "not-found"
-  >("idle");
-
-  const handleRetry = () => {
-    const token = localStorage.getItem("caffeineAdminToken");
-    if (token) {
-      setTokenStatus("found");
-    } else {
-      setTokenStatus("not-found");
-    }
-  };
-
-  const handleLogout = () => {
-    onLogout();
-  };
-
+function AdminLoginGate({
+  onLogin,
+  isLoggingIn,
+  hasAdminToken,
+}: {
+  onLogin: () => void;
+  isLoggingIn: boolean;
+  hasAdminToken: boolean;
+}) {
   return (
-    <div className="container mx-auto px-4 py-16 flex items-center justify-center min-h-[60vh]">
+    <div className="container mx-auto px-4 py-12 max-w-lg">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full max-w-lg"
-        data-ocid="admin.panel"
+        className="space-y-4"
       >
         {/* Header */}
-        <div className="flex flex-col items-center text-center mb-8">
-          <div className="relative mb-4">
-            <div className="h-20 w-20 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center">
-              <Shield className="h-9 w-9 text-gold/60" />
-            </div>
-            <div className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
-              <AlertCircle className="h-4 w-4 text-amber-400" />
-            </div>
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="h-20 w-20 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center mb-4">
+            <Shield className="h-9 w-9 text-gold" />
           </div>
-          <h2 className="font-display text-2xl font-bold mb-2">
-            <span className="gold-text-gradient">Admin Access</span> Required
+          <h2 className="font-display text-3xl font-bold">
+            Admin <span className="gold-text-gradient">Dashboard</span>
           </h2>
-          <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">
-            Your admin token may not have been applied. This can happen if you
-            opened this site{" "}
-            <strong className="text-foreground">directly</strong> instead of
-            from the Caffeine dashboard.
+          <p className="text-muted-foreground text-sm mt-2">
+            NakMan Jewellery — Store Management
           </p>
         </div>
 
-        {/* Action Cards */}
-        <div className="space-y-3">
-          {/* Step 1 — Retry */}
-          <div className="bg-card border border-gold/20 rounded-2xl p-5">
-            <div className="flex items-start gap-3">
-              <div className="h-7 w-7 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0 mt-0.5">
-                <RefreshCw className="h-3.5 w-3.5 text-gold" />
+        {/* Token Status Banner */}
+        <AnimatePresence mode="wait">
+          {hasAdminToken ? (
+            <motion.div
+              key="token-found"
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              className="bg-green-500/10 border border-green-500/40 rounded-2xl p-5"
+              data-ocid="admin.success_state"
+            >
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-6 w-6 text-green-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-heading font-bold text-green-300 text-base mb-1">
+                    ✓ Admin Token Detected
+                  </p>
+                  <p className="text-sm text-green-200/80 leading-relaxed">
+                    You are accessing from the{" "}
+                    <strong className="text-green-200">
+                      Caffeine dashboard
+                    </strong>
+                    . Click the button below to get full admin access.
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="font-heading font-semibold text-sm mb-1">
-                  Step 1 — Check Admin Token
-                </p>
-                <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                  Click below to check if an admin token is saved in your
-                  browser.
-                </p>
-                <Button
-                  onClick={handleRetry}
-                  size="sm"
-                  className="gold-gradient text-background font-semibold text-xs"
-                  data-ocid="admin.primary_button"
-                >
-                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                  Retry Admin Login
-                </Button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="token-missing"
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              className="bg-amber-500/10 border border-amber-500/40 rounded-2xl p-5"
+              data-ocid="admin.error_state"
+            >
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-6 w-6 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-heading font-bold text-amber-300 text-base mb-1">
+                    ⚠ Admin Token Not Found
+                  </p>
+                  <p className="text-sm text-amber-200/80 leading-relaxed mb-3">
+                    You must open this site from your{" "}
+                    <strong className="text-amber-200">
+                      Caffeine dashboard
+                    </strong>{" "}
+                    before logging in. Opening the site directly will register
+                    you as a customer, not as admin.
+                  </p>
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-amber-300 uppercase tracking-wider">
+                      Follow these steps first:
+                    </p>
+                    {[
+                      "Go to your Caffeine dashboard (caffeine.ai)",
+                      "Find your NakMan Jewellery project",
+                      'Click "Open App" or the preview/launch button',
+                      "That page will open with admin access — then click Login",
+                    ].map((step, i) => (
+                      <div key={step} className="flex items-start gap-2.5">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-amber-500/25 text-amber-300 flex items-center justify-center font-bold text-xs">
+                          {i + 1}
+                        </span>
+                        <span className="text-xs text-amber-200/80">
+                          {step}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                <AnimatePresence>
-                  {tokenStatus === "found" && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-start gap-2"
-                      data-ocid="admin.success_state"
-                    >
-                      <Info className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-200/80 leading-relaxed">
-                        <strong className="text-amber-300">Token found!</strong>{" "}
-                        Please log out and log back in from the Caffeine
-                        dashboard to apply admin access.
-                      </p>
-                    </motion.div>
-                  )}
-                  {tokenStatus === "not-found" && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-2"
-                      data-ocid="admin.error_state"
-                    >
-                      <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
-                      <p className="text-xs text-red-300/80 leading-relaxed">
-                        <strong className="text-red-300">
-                          No admin token found.
-                        </strong>{" "}
-                        Please open this site from your Caffeine platform
-                        dashboard, then log in again.
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          </div>
+        {/* Login Button */}
+        <div className="bg-card border border-gold/20 rounded-2xl p-6 text-center space-y-3">
+          {hasAdminToken ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Click below to log in and access your admin dashboard.
+              </p>
+              <Button
+                onClick={onLogin}
+                disabled={isLoggingIn}
+                size="lg"
+                className="w-full gold-gradient text-background font-bold text-base gap-2"
+                data-ocid="admin.primary_button"
+              >
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="h-5 w-5" />
+                    Login as Admin
+                  </>
+                )}
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-amber-300/80 font-medium">
+                Complete the steps above first, then login here.
+              </p>
+              <Button
+                onClick={onLogin}
+                disabled={isLoggingIn}
+                size="lg"
+                variant="outline"
+                className="w-full border-amber-500/40 text-amber-300 hover:bg-amber-500/10 font-bold text-base gap-2"
+                data-ocid="admin.secondary_button"
+              >
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <LogOut className="h-5 w-5" />
+                    Login (After Following Steps Above)
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground/60">
+                Logging in without completing the steps above will register you
+                as a customer.
+              </p>
+            </>
+          )}
+        </div>
 
-          {/* Step 2 — Logout */}
-          <div className="bg-card border border-gold/20 rounded-2xl p-5">
-            <div className="flex items-start gap-3">
-              <div className="h-7 w-7 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center shrink-0 mt-0.5">
-                <LogOut className="h-3.5 w-3.5 text-gold" />
-              </div>
-              <div className="flex-1">
-                <p className="font-heading font-semibold text-sm mb-1">
-                  Step 2 — Logout &amp; Try Again
-                </p>
-                <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                  Log out first, then open the site from your{" "}
-                  <strong className="text-foreground">
-                    Caffeine dashboard
-                  </strong>{" "}
-                  and log in again. The admin token is only applied when you
-                  open the site from the dashboard.
-                </p>
-                <Button
-                  onClick={handleLogout}
-                  size="sm"
-                  variant="outline"
-                  className="border-gold/30 text-foreground hover:bg-gold/10 font-semibold text-xs"
-                  data-ocid="admin.secondary_button"
-                >
-                  <LogOut className="h-3.5 w-3.5 mr-1.5" />
-                  Logout &amp; Try Again
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Info box */}
-          <div className="bg-muted/30 border border-border/50 rounded-2xl p-4 flex items-start gap-3">
-            <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+        {/* Info box */}
+        <div className="bg-muted/20 border border-border/40 rounded-2xl p-4 flex items-start gap-3">
+          <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               <strong className="text-foreground">
                 How admin login works:
               </strong>{" "}
               When you open the site from the Caffeine dashboard, a secure admin
-              token is added to the URL. Logging in from that link grants you
-              permanent admin access. Direct URL access does not include this
-              token.
+              token is added to the URL automatically. Logging in from that link
+              permanently grants you admin access. Opening the site directly (by
+              typing the URL) does not include this token.
             </p>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function AdminAccessHelp({
+  onLogout,
+  hasAdminToken,
+}: {
+  onLogout: () => void;
+  hasAdminToken: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const [isClaiming, setIsClaiming] = useState(false);
+
+  // Auto-trigger claim when admin token is present in URL
+  useEffect(() => {
+    if (!hasAdminToken) return;
+    const timer = setTimeout(() => {
+      handleClaimAdmin();
+    }, 2000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasAdminToken]);
+
+  const handleClaimAdmin = async () => {
+    setIsClaiming(true);
+    await queryClient.invalidateQueries({ queryKey: ["actor"] });
+    await queryClient.invalidateQueries({ queryKey: ["isAdmin"] });
+    setIsClaiming(false);
+  };
+
+  const steps = hasAdminToken
+    ? [
+        {
+          step: 1,
+          title: "Open site from Caffeine dashboard",
+          desc: 'Go to caffeine.ai, find your project, and click "Open App" — this adds the admin token to the URL automatically.',
+          highlight: false,
+        },
+        {
+          step: 2,
+          title: 'Click "Claim Admin Access" below',
+          desc: "The admin token is present in this URL. Click the button below to claim your admin privileges.",
+          highlight: true,
+        },
+        {
+          step: 3,
+          title: "Wait a moment",
+          desc: "Admin access will be granted automatically. The page will refresh once confirmed.",
+          highlight: false,
+        },
+      ]
+    : [
+        {
+          step: 1,
+          title: "Logout first",
+          desc: "Click the Logout button below to log out of this account.",
+          highlight: true,
+        },
+        {
+          step: 2,
+          title: "Go to your Caffeine dashboard",
+          desc: "Open caffeine.ai in your browser and log in to your Caffeine account.",
+          highlight: false,
+        },
+        {
+          step: 3,
+          title: 'Click "Open App" on your project',
+          desc: 'Find your NakMan Jewellery project and click the "Open App" or preview button.',
+          highlight: false,
+        },
+        {
+          step: 4,
+          title: "Login on that page",
+          desc: "The site will open with the admin token active. Click Login on that page.",
+          highlight: false,
+        },
+        {
+          step: 5,
+          title: "You will have full admin access",
+          desc: "Admin access is granted automatically when the token is present.",
+          highlight: false,
+        },
+      ];
+
+  return (
+    <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[60vh]">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="w-full max-w-lg space-y-4"
+        data-ocid="admin.panel"
+      >
+        {/* Header */}
+        <div className="flex flex-col items-center text-center mb-2">
+          <div className="relative mb-4">
+            <div
+              className={`h-20 w-20 rounded-full flex items-center justify-center ${hasAdminToken ? "bg-amber-500/10 border border-amber-500/30" : "bg-red-500/10 border border-red-500/30"}`}
+            >
+              <Shield
+                className={`h-9 w-9 ${hasAdminToken ? "text-amber-400/80" : "text-red-400/80"}`}
+              />
+            </div>
+            <div
+              className={`absolute -bottom-1 -right-1 h-7 w-7 rounded-full flex items-center justify-center ${hasAdminToken ? "bg-amber-500/20 border border-amber-500/40" : "bg-red-500/20 border border-red-500/40"}`}
+            >
+              <AlertCircle
+                className={`h-4 w-4 ${hasAdminToken ? "text-amber-400" : "text-red-400"}`}
+              />
+            </div>
+          </div>
+          <h2 className="font-display text-2xl font-bold mb-2">
+            Access{" "}
+            <span className={hasAdminToken ? "text-amber-400" : "text-red-400"}>
+              Denied
+            </span>
+          </h2>
+          <p className="text-muted-foreground text-sm leading-relaxed max-w-sm">
+            {hasAdminToken
+              ? "Admin token detected. Claiming your admin access..."
+              : "You are logged in, but this account does not have admin privileges."}
+          </p>
+        </div>
+
+        {/* Token status banner */}
+        <AnimatePresence mode="wait">
+          {hasAdminToken ? (
+            <motion.div
+              key="token-found"
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              className="bg-green-500/10 border border-green-500/40 rounded-2xl p-5"
+              data-ocid="admin.success_state"
+            >
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-6 w-6 text-green-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-heading font-bold text-green-300 text-base mb-1">
+                    ✓ Admin Token Detected
+                  </p>
+                  <p className="text-sm text-green-200/80 leading-relaxed">
+                    You opened this site from the{" "}
+                    <strong className="text-green-200">
+                      Caffeine dashboard
+                    </strong>
+                    . Click{" "}
+                    <strong className="text-green-200">
+                      "Claim Admin Access"
+                    </strong>{" "}
+                    below to get your admin privileges.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="token-missing"
+              initial={{ opacity: 0, scale: 0.97 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.97 }}
+              className="bg-amber-500/10 border border-amber-500/40 rounded-2xl p-5"
+              data-ocid="admin.error_state"
+            >
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-6 w-6 text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-heading font-bold text-amber-300 mb-2">
+                    What happened?
+                  </p>
+                  <p className="text-sm text-amber-200/80 leading-relaxed">
+                    You logged in{" "}
+                    <strong className="text-amber-200">before</strong> the admin
+                    token was loaded. Please logout and open the site from your
+                    Caffeine dashboard before logging in again.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Fix steps */}
+        <div className="bg-card border border-gold/20 rounded-2xl p-5">
+          <p className="font-heading font-bold text-foreground mb-4 flex items-center gap-2">
+            <ArrowRight className="h-4 w-4 text-gold" />
+            How to fix this — follow these steps:
+          </p>
+          <div className="space-y-3">
+            {steps.map(({ step, title, desc, highlight }) => (
+              <div key={step} className="flex items-start gap-3">
+                <span
+                  className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm ${highlight ? "bg-gold/25 border border-gold/50 text-gold" : "bg-muted/50 border border-border/50 text-muted-foreground"}`}
+                >
+                  {step}
+                </span>
+                <div className="pt-0.5">
+                  <p
+                    className={`text-sm font-semibold ${highlight ? "text-gold" : "text-foreground"}`}
+                  >
+                    {title}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Primary CTA — changes based on token presence */}
+        <div className="bg-card border border-gold/20 rounded-2xl p-5 text-center space-y-3">
+          {hasAdminToken ? (
+            <>
+              <p className="text-sm text-foreground font-medium">
+                Admin token is active. Click below to claim your access.
+              </p>
+              <Button
+                onClick={handleClaimAdmin}
+                disabled={isClaiming}
+                size="lg"
+                className="w-full gold-gradient text-background font-bold text-base gap-2"
+                data-ocid="admin.primary_button"
+              >
+                {isClaiming ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Claiming Admin Access...
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="h-5 w-5" />
+                    Claim Admin Access
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                This will verify your admin token and grant full dashboard
+                access.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-foreground font-medium">
+                Start by logging out, then follow the steps above.
+              </p>
+              <Button
+                onClick={onLogout}
+                size="lg"
+                className="w-full gold-gradient text-background font-bold text-base gap-2"
+                data-ocid="admin.primary_button"
+              >
+                <LogOut className="h-5 w-5" />
+                Logout Now
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                After logging out, open the site from your Caffeine dashboard
+                and login again.
+              </p>
+            </>
+          )}
+        </div>
+
+        {/* Info box */}
+        <div className="bg-muted/20 border border-border/40 rounded-2xl p-4 flex items-start gap-3">
+          <Info className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              <strong className="text-foreground">
+                How admin login works:
+              </strong>{" "}
+              When you open the site from the Caffeine dashboard, a secure admin
+              token is added to the URL automatically. This token grants admin
+              privileges to your account. Opening the site directly (by typing
+              the URL) does not include this token.
+            </p>
+            <a
+              href="https://caffeine.ai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs text-gold/70 hover:text-gold transition-colors"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Go to caffeine.ai dashboard
+            </a>
           </div>
         </div>
       </motion.div>

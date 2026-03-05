@@ -98,6 +98,17 @@ export interface _SERVICE {
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addToCart' : ActorMethod<[string, bigint], undefined>,
+  'adminUpdateUserInfo' : ActorMethod<
+    [
+      Principal,
+      {
+        'name' : [] | [string],
+        'email' : [] | [string],
+        'phone' : [] | [string],
+      },
+    ],
+    undefined
+  >,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'clearCart' : ActorMethod<[], undefined>,
   'createBlogPost' : ActorMethod<
@@ -122,6 +133,7 @@ export interface _SERVICE {
   >,
   'deleteBlogPost' : ActorMethod<[string], undefined>,
   'deleteProduct' : ActorMethod<[string], undefined>,
+  'deleteUserProfile' : ActorMethod<[], undefined>,
   'getAllBlogPosts' : ActorMethod<[], Array<BlogPost>>,
   'getAllOrders' : ActorMethod<[], Array<Order>>,
   'getAllProducts' : ActorMethod<[], Array<Product>>,
